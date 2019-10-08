@@ -1,0 +1,46 @@
+INDOBANK LTD                                                          08/10/2019
+                                                                      PAGE NO:01
+                       OUTSTANDING LOAN REPORT
+
+
+LOAN CATEGORY     CUSTOMER NUMBER   LOAN NUMBER    DATE OF OPENING     AMOUNT
+
+     AL               C1005            L5000          08/10/2019        93500   
+     AL               C1009            L5000          08/10/2019         3450   
+     CL               C1004            L4000          08/10/2019        89705   
+--------------------------------------------------------------------------------
+INDOBANK LTD
+
+                                                                      PAGE NO:02
+                       OUTSTANDING LOAN REPORT
+
+
+LOAN CATEGORY     CUSTOMER NUMBER   LOAN NUMBER    DATE OF OPENING     AMOUNT
+
+     CL               C1006            L4000          08/10/2019       209000   
+    EL               C1004            L2000          08/10/2019        72600   
+     EL               C1007            L2000          08/10/2019        11392   
+--------------------------------------------------------------------------------
+INDOBANK LTD
+
+                                                                      PAGE NO:03
+                       OUTSTANDING LOAN REPORT
+
+
+LOAN CATEGORY     CUSTOMER NUMBER   LOAN NUMBER    DATE OF OPENING     AMOUNT
+
+     EL               C1007            L2000          08/10/2019          000   
+     HL               C1003            L3000          08/10/2019       300000   
+     PL               C1005            L1000          08/10/2019          000   
+--------------------------------------------------------------------------------
+INDOBANK LTD
+
+                                                                      PAGE NO:04
+                       OUTSTANDING LOAN REPORT
+
+
+LOAN CATEGORY     CUSTOMER NUMBER   LOAN NUMBER    DATE OF OPENING     AMOUNT
+
+     PL               C1006            L1000          08/10/2019        53750   
+
+OUTSTANDING AMOUNT GRAND TOTAL :   0833397

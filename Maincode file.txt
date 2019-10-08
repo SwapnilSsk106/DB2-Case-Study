@@ -1,0 +1,688 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID.    MAINCODE.
+       ENVIRONMENT DIVISION.
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+      *********************** TRANSACTION FILE *************************
+             SELECT INFILE ASSIGN TO DD1
+             FILE STATUS IS WS-FS1.
+      ************************* ERROR FILE *****************************
+             SELECT OUTFILE ASSIGN TO DD2
+             FILE STATUS IS WS-FS2.
+      ******************************************************************
+       DATA DIVISION.
+       FILE SECTION.
+       FD INFILE.
+      *********************** FOR TYPE 1 INPUT *************************
+       01 INREC.
+          05 OP              PIC XX.
+          05 FS-CID          PIC X(5).
+          05 FS-NAME         PIC X(10).
+          05 FS-ADDR         PIC X(20).
+          05 FILLER          PIC X(43).
+      *********************** FOR TYPE 2 INPUT *************************
+       01 INREC2.
+          05 OP              PIC XX.
+          05 FS-CID          PIC X(5).
+          05 FS-ADDR         PIC X(20).
+          05 FILLER          PIC X(53).
+      *********************** FOR TYPE 3 INPUT *************************
+       01 INREC3.
+          05 OP              PIC XX.
+          05 FS-CID          PIC X(5).
+          05 FILLER          PIC X(73).
+      *********************** FOR TYPE 4 INPUT *************************
+       01 INREC4.
+          05 OP              PIC XX.
+          05 FS-CID          PIC X(5).
+          05 FS-LTYPE        PIC XX.
+             88 PL                    VALUE 'PL'.
+             88 EL                    VALUE 'EL'.
+             88 HL                    VALUE 'HL'.
+             88 CL                    VALUE 'CL'.
+             88 AL                    VALUE 'AL'.
+          05 FS-LAMT         PIC 9(7).
+          05 FILLER          PIC X(64).
+      *********************** FOR TYPE 5 INPUT *************************
+       01 INREC5.
+          05 OP              PIC XX.
+          05 FS-CID          PIC X(5).
+          05 FS-LTYPE        PIC XX.
+          05 FS-LID          PIC X(5).
+          05 FS-LAMT         PIC 9(7).
+          05 FILLER          PIC X(59).
+       FD OUTFILE.
+      *********************** FOR TYPE 1,2 OUTPUT **********************
+       01 OUTREC.
+          05 OP              PIC XX.
+          05 FS-CID          PIC X(5).
+          05 FS-NAME         PIC X(10).
+          05 FS-ADDR         PIC X(20).
+          05 FS-TEXT         PIC X(40).
+          05 FILLER          PIC X(3).
+      ************************ FOR TYPE 3 OUTPUT ***********************
+       01 OUTREC4.
+          05 OP              PIC XX.
+          05 FS-CID          PIC X(5).
+          05 FILLER          PIC X(30).
+          05 FS-TEXT         PIC X(40).
+          05 FILLER          PIC X(3).
+      *********************** FOR TYPE 4 OUTPUT ************************
+       01 OUTREC2.
+          05 OP              PIC XX.
+          05 FS-CID          PIC X(5).
+          05 FS-LTYPE        PIC X(2).
+          05 FS-LAMT         PIC 9(7).
+          05 FILLER          PIC X(21).
+          05 FS-TEXT         PIC X(40).
+          05 FILLER          PIC X(3).
+      *********************** FOR TYPE 5 OUTPUT ************************
+       01 OUTREC3.
+          05 OP              PIC XX.
+          05 FS-CID          PIC X(5).
+          05 FS-LTYPE        PIC XX.
+          05 FS-LID          PIC X(5).
+          05 FS-LAMT         PIC 9(7).
+          05 FILLER          PIC X(16).
+          05 FS-TEXT         PIC X(40).
+          05 FILLER          PIC X(3).
+       WORKING-STORAGE SECTION.
+           EXEC SQL
+             INCLUDE CUST
+           END-EXEC
+           EXEC SQL
+             INCLUDE LOAN
+           END-EXEC
+           EXEC SQL
+             INCLUDE LOANTRAN
+           END-EXEC
+           EXEC SQL
+             INCLUDE SQLCA
+           END-EXEC
+       77 WS-FS1             PIC 99.
+       77 WS-FS2             PIC 99.
+       77 CNTR               PIC 9    VALUE 0.
+       77 CNTR2              PIC 9.
+       77 CNTR3              PIC 9.
+       77 CNTR4              PIC 9.
+       77 TEMP               PIC 9(6).
+       77 TEMP1              PIC 9(6).
+       77 TEMP2              PIC 9(7).
+       77 VAR1               PIC X(10).
+       77 VAR2               PIC X(10).
+       77 VAR3               PIC X(10).
+       PROCEDURE DIVISION.
+      ****** PARA TO OPEN AND CHECK FILE STATUS OF I/P & O/P FILE ******
+      ******************************************************************
+       MAIN-PARA.
+           OPEN INPUT INFILE
+              IF WS-FS1 = 0
+                 DISPLAY ' INPUT FILE OPEN SUCCESSFUL '
+              ELSE
+                 DISPLAY ' INPUT FILE OPEN FAILED WITH: ' WS-FS1
+              END-IF
+           OPEN OUTPUT OUTFILE
+              IF WS-FS2 = 0
+                 DISPLAY ' OUTPUT FILE OPEN SUCCESSFUL '
+              ELSE
+                 DISPLAY ' OUTPUT FILE OPEN FAILED WITH: ' WS-FS2
+              END-IF
+           PERFORM READ-PARA UNTIL WS-FS1 NOT = 0
+           CLOSE INFILE
+           CLOSE OUTFILE
+           STOP RUN.
+      *********** PARA TO READ I/P FILE AND CHECK OP TYPE **************
+      ******************************************************************
+       READ-PARA.
+           READ INFILE
+           AT END DISPLAY ' ALL RECORDS PROCESSED SUCCESSFULLY '
+           NOT AT END
+            IF OP OF INREC = '01'
+               PERFORM CHECK-PARA1
+            ELSE
+               IF OP OF INREC2 = '02'
+                 PERFORM CHECK-PARA2
+              ELSE
+                 IF OP OF INREC3 = '03'
+                   PERFORM CHECK-PARA3
+                ELSE
+                   IF OP OF INREC4 = '04'
+                     PERFORM CHECK-PARA4
+                  ELSE
+                     IF OP OF INREC5 = '05'
+                       PERFORM CHECK-PARA5
+                    ELSE
+                       DISPLAY ' INVALID OPTION ENTERED '
+                    END-IF
+                  END-IF
+                END-IF
+              END-IF
+            END-IF.
+      ** PARA TO CHECK THE FIELDS ARE CORRECT OR NOT FOR TYPE1 INPUT ***
+      ******************************************************************
+       CHECK-PARA1.
+           IF FS-CID OF INREC IS NOT = SPACES
+              IF FS-NAME OF INREC IS NOT = SPACES
+                 IF FS-ADDR OF INREC IS NOT = SPACES
+                    UNSTRING FS-CID OF INREC DELIMITED BY SPACES INTO
+                    VAR1, VAR2, VAR3  TALLYING IN CNTR
+                    IF CNTR = 1
+                       PERFORM INSERT-PARA
+                    ELSE
+                       PERFORM ERROR-PARA-CID
+                       INITIALIZE CNTR
+                    END-IF
+                 ELSE
+                    PERFORM ERROR-PARA-ADDR
+                 END-IF
+              ELSE
+                 PERFORM ERROR-PARA-NAME
+              END-IF
+           ELSE
+              PERFORM ERROR-PARA-CID
+           END-IF.
+      ************ PARA TO INSERT RECORD INTO CUSTOMER TABLE ***********
+      ******************************************************************
+       INSERT-PARA.
+           MOVE FS-CID OF INREC TO HV-CID
+           MOVE FS-NAME OF INREC TO HV-NAME
+           MOVE FS-ADDR OF INREC TO HV-ADDR-TEXT
+           MOVE LENGTH OF HV-ADDR-TEXT TO HV-ADDR-LEN
+           EXEC SQL
+             SELECT CID INTO :HV-CID FROM CUSTOMER
+             WHERE CID = :HV-CID
+           END-EXEC
+           IF SQLCODE NOT = 0
+              EXEC SQL
+                INSERT INTO CUSTOMER VALUES(:HV-CID,:HV-NAME,:HV-ADDR)
+              END-EXEC
+              IF SQLCODE = 0
+                 DISPLAY ' INSERT FOR ' HV-CID ' IN CUST IS SUCCESSFUL '
+              ELSE
+                 DISPLAY ' INSERT FAILED IN CUST TABLE : ' SQLCODE
+              END-IF
+           ELSE
+              PERFORM ERROR-PARA-CID7
+           END-IF.
+      ** PARA TO CHECK THE FIELDS ARE CORRECT OR NOT FOR TYPE2 INPUT ***
+      ******************************************************************
+       CHECK-PARA2.
+           IF FS-CID OF INREC2 IS NOT  = SPACES
+              IF FS-ADDR OF INREC2 IS NOT = SPACES
+                 PERFORM UPDATE-PARA
+              ELSE
+                 PERFORM ERROR-PARA-ADDR2
+              END-IF
+           ELSE
+              PERFORM ERROR-PARA-CID2
+           END-IF.
+      ************ PARA TO UPDATE RECORD FROM CUSTOMER TABLE ***********
+      ******************************************************************
+       UPDATE-PARA.
+           MOVE FS-CID OF INREC2 TO HV-CID
+           MOVE FS-ADDR OF INREC2 TO HV-ADDR-TEXT
+           MOVE LENGTH OF HV-ADDR-TEXT TO HV-ADDR-LEN
+           EXEC SQL
+             SELECT CID INTO :HV-CID FROM CUSTOMER
+             WHERE CID = :HV-CID
+           END-EXEC
+           IF SQLCODE = 0
+              EXEC SQL
+                UPDATE CUSTOMER
+                SET ADDR = :HV-ADDR
+                WHERE CID = :HV-CID
+              END-EXEC
+              IF SQLCODE = 0
+                 DISPLAY ' UPDATE FOR ' HV-CID  ' IN CUST SUCCESSFUL '
+              ELSE
+                 DISPLAY ' UPDATE FAILED IN CUST TABLE: ' SQLCODE
+              END-IF
+            ELSE
+               PERFORM ERROR-PARA-CID3
+            END-IF.
+      ** PARA TO CHECK THE FIELDS ARE CORRECT OR NOT FOR TYPE3 INPUT ***
+      ******************************************************************
+       CHECK-PARA3.
+           IF FS-CID OF INREC3 NOT = SPACES
+              PERFORM DELETE-PARA
+           ELSE
+              MOVE OP OF INREC3 TO OP OF OUTREC
+              MOVE FS-CID OF INREC3 TO FS-CID OF OUTREC
+              MOVE ' CID FIELD IS BLANK IN DELETE ' TO FS-TEXT OF OUTREC
+              WRITE OUTREC
+           END-IF.
+      ************ PARA TO DELETE RECORD FROM CUSTOMER TABLE ***********
+      ******************************************************************
+       DELETE-PARA.
+           MOVE FS-CID OF INREC3 TO HV-CID
+           MOVE FS-CID OF INREC3 TO HV2-CID
+           EXEC SQL
+             SELECT CID INTO :HV-CID FROM CUSTOMER
+             WHERE CID =:HV-CID
+           END-EXEC
+           IF SQLCODE = 0
+              EXEC SQL
+                SELECT COUNT(CID) INTO :HV2-OUTAMT FROM LOAN_TRANS
+                WHERE CID =:HV2-CID
+              END-EXEC
+              MOVE HV2-OUTAMT TO CNTR3
+              IF CNTR3 > 0
+                 EXEC SQL
+                   SELECT COUNT(CID) INTO :HV2-OUTAMT FROM LOAN_TRANS
+                   WHERE CID =:HV2-CID
+                 END-EXEC
+                 MOVE HV2-OUTAMT TO CNTR3
+                 MOVE 'C' TO HV2-STATUS
+                 EXEC SQL
+                   SELECT COUNT(CID) INTO :HV2-OUTAMT FROM LOAN_TRANS
+                   WHERE CID =:HV2-CID AND STATUS =:HV2-STATUS
+                 END-EXEC
+                 MOVE HV2-OUTAMT TO CNTR4
+                 IF CNTR3 = CNTR4
+                    EXEC SQL
+                      DELETE FROM CUSTOMER
+                      WHERE CID=:HV-CID
+                    END-EXEC
+                    IF SQLCODE = 0
+                       DISPLAY ' DELETE SUCCESSFUL '
+                    ELSE
+                       DISPLAY ' DELETE FAILED WITH SQLCODE: ' SQLCODE
+                    END-IF
+                 ELSE
+                    PERFORM ERROR-PARA-DEL
+                 END-IF
+              ELSE
+                 PERFORM ERROR-PARA-DEL2
+              END-IF
+           ELSE
+              PERFORM ERROR-PARA-CID4
+           END-IF.
+      ** PARA TO CHECK THE FIELDS ARE CORRECT OR NOT FOR TYPE4 INPUT ***
+      ******************************************************************
+       CHECK-PARA4.
+           IF FS-CID OF INREC4 NOT = SPACES
+              IF FS-LTYPE OF INREC4 NOT = SPACES
+                 IF FS-LAMT OF INREC4 NOT = SPACES
+                    PERFORM VALID-PARA
+                 ELSE
+                    PERFORM ERROR-PARA-LAMT
+                 END-IF
+              ELSE
+                 PERFORM ERROR-PARA-LTYPE
+              END-IF
+           ELSE
+              PERFORM ERROR-PARA-CID5
+           END-IF.
+      ****** PARA TO CHECK NO. OF LOANS AND CID ARE VALID OR NOT *******
+      ******************************************************************
+       VALID-PARA.
+           MOVE FS-CID OF INREC4 TO HV2-CID
+           MOVE 'O' TO HV2-STATUS
+           MOVE FS-LTYPE OF INREC4 TO HV2-TYPE
+           EXEC SQL
+             SELECT CID INTO :HV-CID FROM CUSTOMER
+             WHERE CID = :HV2-CID
+           END-EXEC
+           IF SQLCODE = 0
+              EXEC SQL
+                SELECT LNO INTO :HV2-OUTAMT FROM LOAN_TRANS
+                WHERE CID =:HV2-CID AND STATUS =:HV2-STATUS AND
+                TYPE =:HV2-TYPE
+              END-EXEC
+              IF SQLCODE NOT = 0
+                 EXEC SQL
+                   SELECT COUNT(LNO) INTO :HV2-OUTAMT FROM LOAN_TRANS
+                   WHERE CID =:HV2-CID AND STATUS =:HV2-STATUS
+                 END-EXEC
+                 MOVE HV2-OUTAMT TO CNTR2
+                 IF CNTR2  < 5
+                    PERFORM LOAN-PARA
+                    INITIALIZE CNTR2
+                    MOVE FS-CID OF INREC4 TO HV2-CID
+                 ELSE
+                    PERFORM ERROR-PARA-LOANNO
+                 END-IF
+              ELSE
+                 PERFORM ERROR-PARA-LTYPE4
+              END-IF
+           ELSE
+              PERFORM ERROR-PARA-CID6
+           END-IF.
+      ********** PARA TO CHECK TYPE OF LOAN IS VALID OR NOT ************
+      ******************************************************************
+       LOAN-PARA.
+           MOVE FS-LTYPE OF INREC4 TO HV2-TYPE
+           EXEC SQL
+             SELECT ROI,LID INTO :HV1-ROI,:HV1-LID FROM LOAN
+             WHERE TYPE = :HV2-TYPE
+           END-EXEC
+           MOVE HV1-LID TO HV2-LID
+           EXEC SQL
+             SELECT TERM INTO :HV1-TERM FROM LOAN
+             WHERE TYPE = :HV2-TYPE
+           END-EXEC
+           EVALUATE FS-LTYPE OF INREC4
+             WHEN 'PL'
+               IF FS-LAMT OF INREC4 > 100000
+                  PERFORM ERROR-PARA-LAMT2
+               ELSE
+                  PERFORM LOAN-CALC
+               END-IF
+             WHEN 'EL'
+               IF FS-LAMT OF INREC4 > 100000
+                  PERFORM ERROR-PARA-LAMT2
+               ELSE
+                  PERFORM LOAN-CALC
+               END-IF
+             WHEN 'HL'
+               IF FS-LAMT OF INREC4 > 500000
+                  PERFORM ERROR-PARA-LAMT2
+               ELSE
+                  PERFORM LOAN-CALC
+               END-IF
+             WHEN 'CL'
+               IF FS-LAMT OF INREC4 > 300000
+                  PERFORM ERROR-PARA-LAMT2
+               ELSE
+                  PERFORM LOAN-CALC
+               END-IF
+             WHEN 'AL'
+               IF FS-LAMT OF INREC4 > 150000
+                  PERFORM ERROR-PARA-LAMT2
+               ELSE
+                  PERFORM LOAN-CALC
+               END-IF
+             WHEN OTHER
+               PERFORM ERROR-PARA-LTYPE2
+           END-EVALUATE.
+      **** PARA TO CALCULATE LOAN AMT AND INSERT IN LOAN_TRANS TABLE ***
+      ******************************************************************
+       LOAN-CALC.
+            EXEC SQL
+              SELECT MAX(LNO) INTO :HV2-OUTAMT FROM LOAN_TRANS
+            END-EXEC
+            MOVE HV2-OUTAMT TO CNTR
+            ADD 1 TO CNTR
+            MOVE 'O' TO HV2-STATUS
+            MOVE CNTR TO HV2-LNO
+            COMPUTE TEMP = ( HV1-ROI * FS-LAMT OF INREC4 * HV1-TERM )
+            COMPUTE TEMP1 = FS-LAMT OF INREC4 + ( TEMP / 100 )
+            MOVE TEMP1 TO HV2-OUTAMT
+            EXEC SQL
+              INSERT INTO LOAN_TRANS (LNO,LID,CID,TYPE,STATUS,OUTAMT)
+              VALUES (:HV2-LNO,:HV2-LID,:HV2-CID,:HV2-TYPE,:HV2-STATUS,
+                    :HV2-OUTAMT)
+            END-EXEC
+            IF SQLCODE = 0
+               DISPLAY ' INSERT OF LOAN IN LOAN_TRANS SUCCESSFUL '
+            ELSE
+               DISPLAY ' INSERT IN LOAN_TRANS FAILED WITH: ' SQLCODE
+            END-IF.
+      ** PARA TO CHECK THE FIELDS ARE CORRECT OR NOT FOR TYPE5 INPUT ***
+      ******************************************************************
+       CHECK-PARA5.
+           IF FS-CID OF INREC5 NOT = SPACES
+              IF FS-LTYPE OF INREC5 NOT = SPACES
+                 IF FS-LAMT OF INREC5 NOT = SPACES
+                    IF FS-LID OF INREC5 NOT = SPACES
+                       PERFORM VALID-PARA2
+                    ELSE
+                       PERFORM ERROR-PARA-LID
+                    END-IF
+                 ELSE
+                    PERFORM ERROR-PARA-LAMT3
+                 END-IF
+              ELSE
+                 PERFORM ERROR-PARA-LTYPE3
+              END-IF
+           ELSE
+              PERFORM ERROR-PARA-CID8
+           END-IF.
+      ********* PARA TO CHECK CID, LTYPE AND LID EXIST OR NOT **********
+      ******************************************************************
+       VALID-PARA2.
+           MOVE FS-CID OF INREC5 TO HV2-CID
+           MOVE FS-LTYPE OF INREC5 TO HV2-TYPE
+           MOVE FS-LID OF INREC5 TO HV2-LID
+           MOVE 'O' TO HV2-STATUS
+           EXEC SQL
+             SELECT CID INTO :HV2-CID FROM LOAN_TRANS
+             WHERE CID = :HV2-CID AND TYPE = :HV2-TYPE AND
+             LID = :HV2-LID AND STATUS =:HV2-STATUS
+           END-EXEC
+                 IF SQLCODE = 0
+                    EXEC SQL
+                     SELECT OUTAMT INTO :HV2-OUTAMT FROM LOAN_TRANS
+                     WHERE CID = :HV2-CID AND LID = :HV2-LID AND
+                     TYPE = :HV2-TYPE AND STATUS = :HV2-STATUS
+                    END-EXEC
+                    IF SQLCODE = 0
+                       PERFORM REPAY-PARA
+                    ELSE
+                       DISPLAY ' ERROR '
+                    END-IF
+                 ELSE
+                    PERFORM ERROR-PARA-INVALID
+                 END-IF.
+      ************** PARA TO PERFORM REPAYMENT OF LOAN *****************
+      ******************************************************************
+       REPAY-PARA.
+           MOVE FS-CID OF INREC5 TO HV2-CID
+           MOVE FS-LTYPE OF INREC5 TO HV2-TYPE
+           MOVE FS-LID OF INREC5 TO HV2-LID
+           EXEC SQL
+             SELECT CID INTO :HV2-CID FROM LOAN_TRANS
+             WHERE CID = :HV2-CID AND TYPE = :HV2-TYPE AND
+             LID = :HV2-LID
+           END-EXEC
+           IF HV2-OUTAMT = FS-LAMT OF INREC5
+              MOVE 'C' TO HV2-STATUS
+              DISPLAY HV2-STATUS
+              MOVE 0 TO HV2-OUTAMT
+              EXEC SQL
+                UPDATE LOAN_TRANS
+                SET STATUS =:HV2-STATUS ,OUTAMT =:HV2-OUTAMT ,
+                CDATE = CURRENT_DATE + 1 DAY
+                WHERE CID =:HV2-CID AND LID =:HV2-LID AND
+                TYPE =:HV2-TYPE
+              END-EXEC
+              IF SQLCODE = 0
+                 DISPLAY ' UPDATED LOAN STATUS IN LOAN_TRANS TABLE '
+              ELSE
+                 DISPLAY ' UPDATE FAILED IN LOAN_TRANS TABLE ' SQLCODE
+              END-IF
+           ELSE
+              IF HV2-OUTAMT < FS-LAMT OF INREC5
+                 PERFORM ERROR-PARA-LAMT4
+              ELSE
+                 COMPUTE TEMP2 = HV2-OUTAMT - FS-LAMT OF INREC5
+                 MOVE TEMP2 TO HV2-OUTAMT
+                 EXEC SQL
+                   UPDATE LOAN_TRANS
+                   SET OUTAMT =:HV2-OUTAMT
+                   WHERE CID =:HV2-CID AND LID =:HV2-LID AND
+                   TYPE =:HV2-TYPE
+                 END-EXEC
+                 IF SQLCODE = 0
+                    DISPLAY ' UPDATED LOAN STATUS IN LOAN_TRANS TABLE '
+                 ELSE
+                    DISPLAY ' UPDATE FAILED IN LOAN_TRANS TABLE' SQLCODE
+                 END-IF
+              END-IF
+           END-IF.
+      ********* PARAS TO DISPLAY ERROR IF CID FIELD IS INVALID *********
+      ******************************************************************
+       ERROR-PARA-CID.
+           MOVE OP OF INREC TO OP OF OUTREC
+           MOVE FS-NAME OF INREC TO FS-NAME OF OUTREC
+           MOVE FS-ADDR OF INREC TO FS-ADDR OF OUTREC
+           MOVE ' CID IS TOT/PAR BLANK IN INSERT ' TO FS-TEXT OF OUTREC
+           WRITE OUTREC.
+       ERROR-PARA-CID2.
+           MOVE OP OF INREC2 TO OP OF OUTREC
+           MOVE FS-CID OF INREC2 TO FS-CID OF OUTREC
+           MOVE FS-ADDR OF INREC2 TO FS-ADDR OF OUTREC
+           MOVE ' CID FIELD IS BLANK IN UPDATE ' TO FS-TEXT OF OUTREC
+           WRITE OUTREC.
+       ERROR-PARA-CID3.
+           MOVE OP OF INREC2 TO OP OF OUTREC
+           MOVE FS-CID OF INREC2 TO FS-CID OF OUTREC
+           MOVE ' CID DOESNT EXIST TO UPDATE ' TO FS-TEXT OF OUTREC
+           WRITE OUTREC.
+       ERROR-PARA-CID4.
+           MOVE OP OF INREC3 TO OP OF OUTREC
+           MOVE FS-CID OF INREC3 TO FS-CID OF OUTREC
+           MOVE ' CID DOESNT EXIST TO DELETE ' TO FS-TEXT OF OUTREC
+           WRITE OUTREC.
+       ERROR-PARA-CID5.
+           MOVE OP OF INREC4 TO OP OF OUTREC2
+           MOVE FS-CID OF INREC4 TO FS-CID OF OUTREC2
+           MOVE FS-LTYPE OF INREC4 TO FS-LTYPE OF OUTREC2
+           MOVE FS-LAMT OF INREC4 TO FS-LAMT OF OUTREC2
+           MOVE ' CID FIELD IS BLANK IN ADD LOAN ' TO FS-TEXT OF OUTREC2
+           WRITE OUTREC2.
+       ERROR-PARA-CID6.
+           MOVE OP OF INREC4 TO OP OF OUTREC2
+           MOVE FS-CID OF INREC4 TO FS-CID OF OUTREC2
+           MOVE FS-LTYPE OF INREC4 TO FS-LTYPE OF OUTREC2
+           MOVE FS-LAMT OF INREC4 TO FS-LAMT OF OUTREC2
+           MOVE ' CID DOESNT EXIST TO ADD A LOAN ' TO FS-TEXT OF OUTREC2
+           WRITE OUTREC2.
+       ERROR-PARA-CID7.
+           MOVE OP OF INREC TO OP OF OUTREC
+           MOVE FS-CID OF INREC TO FS-CID OF OUTREC
+           MOVE FS-NAME OF INREC TO FS-NAME OF OUTREC
+           MOVE FS-ADDR OF INREC TO FS-ADDR OF OUTREC
+           MOVE ' CUSTOMER-ID ALREADY EXISTS ' TO FS-TEXT OF OUTREC
+           WRITE OUTREC.
+       ERROR-PARA-CID8.
+           MOVE OP OF INREC5 TO OP OF OUTREC3
+           MOVE FS-CID OF INREC5 TO FS-CID OF OUTREC3
+           MOVE FS-LTYPE OF INREC5 TO FS-LTYPE OF OUTREC3
+           MOVE FS-LID OF INREC5 TO FS-LID OF OUTREC3
+           MOVE FS-LAMT OF INREC5 TO FS-LAMT OF OUTREC3
+           MOVE ' CID FIELD IS BLANK IN REPAY ' TO FS-TEXT OF OUTREC3
+           WRITE OUTREC3.
+      ******** PARA TO DISPLAY ERROR IF NAME FIELD IS INVALID  *********
+      ******************************************************************
+       ERROR-PARA-NAME.
+           MOVE OP OF INREC TO OP OF OUTREC
+           MOVE FS-CID OF INREC TO FS-CID OF OUTREC
+           MOVE FS-ADDR OF INREC TO FS-ADDR OF OUTREC
+           MOVE ' NAME FIELD IS BLANK IN INSERT ' TO FS-TEXT OF OUTREC
+           WRITE OUTREC.
+      ******** PARAS TO DISPLAY ERROR IF ADDR FIELD IS INVALID  ********
+      ******************************************************************
+       ERROR-PARA-ADDR.
+           MOVE OP OF INREC TO OP OF OUTREC
+           MOVE FS-CID OF INREC TO FS-CID OF OUTREC
+           MOVE FS-NAME OF INREC TO FS-NAME OF OUTREC
+           MOVE ' ADDR FIELD IS BLANK IN INSERT ' TO FS-TEXT OF OUTREC
+           WRITE OUTREC.
+       ERROR-PARA-ADDR2.
+           MOVE OP OF INREC2 TO OP OF OUTREC
+           MOVE FS-CID OF INREC2 TO FS-CID OF OUTREC
+           MOVE ' ADDR FIELD IS BLANK IN UPDATE ' TO FS-TEXT OF OUTREC
+           WRITE OUTREC.
+      ******** PARA TO DISPLAY ERROR IF LTYPE FIELD IS INVALID  ********
+      ******************************************************************
+       ERROR-PARA-LTYPE.
+           MOVE OP OF INREC4 TO OP OF OUTREC2
+           MOVE FS-CID OF INREC4 TO FS-CID OF OUTREC2
+           MOVE FS-LAMT OF INREC4 TO FS-LAMT OF OUTREC2
+           MOVE 'LTYPE FIELD IS BLANK IN ADD LOAN' TO FS-TEXT OF OUTREC2
+           WRITE OUTREC2.
+       ERROR-PARA-LTYPE2.
+           MOVE OP OF INREC4 TO OP OF OUTREC2
+           MOVE FS-CID OF INREC4 TO FS-CID OF OUTREC2
+           MOVE FS-LTYPE OF INREC4 TO FS-LTYPE OF OUTREC2
+           MOVE FS-LAMT OF INREC4 TO FS-LAMT OF OUTREC2
+           MOVE ' LOAN TYPE FIELD IS INVALID ' TO FS-TEXT OF OUTREC2
+           WRITE OUTREC2.
+       ERROR-PARA-LTYPE3.
+           MOVE OP OF INREC5 TO OP OF OUTREC3
+           MOVE FS-CID OF INREC5 TO FS-CID OF OUTREC3
+           MOVE FS-LTYPE OF INREC5 TO FS-LTYPE OF OUTREC3
+           MOVE FS-LAMT OF INREC5 TO FS-LAMT OF OUTREC3
+           MOVE ' LTYPE FIELD IS BLANK IN REPAY ' TO FS-TEXT OF OUTREC3
+           WRITE OUTREC3.
+       ERROR-PARA-LTYPE4.
+           MOVE OP OF INREC4 TO OP OF OUTREC2
+           MOVE FS-CID OF INREC4 TO OP OF OUTREC2
+           MOVE FS-LTYPE OF INREC4 TO FS-LTYPE OF OUTREC2
+           MOVE FS-LAMT OF INREC4 TO FS-LAMT OF OUTREC2
+           MOVE ' SAME TYPE OF LOAN EXISTS ' TO FS-TEXT OF OUTREC2
+           WRITE OUTREC2.
+      ******** PARA TO DISPLAY ERROR IF LID FIELD IS INVALID  **********
+      ******************************************************************
+       ERROR-PARA-LID.
+           MOVE OP OF INREC5 TO OP OF OUTREC3
+           MOVE FS-CID OF INREC5 TO FS-CID OF OUTREC3
+           MOVE FS-LTYPE OF INREC5 TO FS-LTYPE OF OUTREC3
+           MOVE FS-LAMT OF INREC5 TO FS-LAMT OF OUTREC3
+           MOVE ' LID FIELD IS BLANK IN REPAY ' TO FS-TEXT OF OUTREC3
+           WRITE OUTREC3.
+      ******** PARA TO DISPLAY ERROR IF LAMT FIELD IS INVALID  *********
+      ******************************************************************
+       ERROR-PARA-LAMT.
+           MOVE OP OF INREC4 TO OP OF OUTREC2
+           MOVE FS-CID OF INREC4 TO FS-CID OF OUTREC2
+           MOVE FS-LTYPE OF INREC4 TO FS-LTYPE OF OUTREC2
+           MOVE ' LAMT FIELD IS BLANK IN ADD LOAN' TO FS-TEXT OF OUTREC2
+           WRITE OUTREC2.
+       ERROR-PARA-LAMT2.
+           MOVE OP OF INREC4 TO OP OF OUTREC2
+           MOVE FS-CID OF INREC4 TO FS-CID OF OUTREC2
+           MOVE FS-LTYPE OF INREC4 TO FS-LTYPE OF OUTREC2
+           MOVE FS-LAMT OF INREC4 TO FS-LAMT OF OUTREC2
+           MOVE ' AMOUNT EXCEEDED THE LIMIT ' TO FS-TEXT OF OUTREC2
+           WRITE OUTREC2.
+       ERROR-PARA-LAMT3.
+           MOVE OP OF INREC5 TO OP OF OUTREC3
+           MOVE FS-CID OF INREC5 TO FS-CID OF OUTREC3
+           MOVE FS-LTYPE OF INREC5 TO FS-LTYPE OF OUTREC3
+           MOVE FS-LID OF INREC5 TO FS-LID OF OUTREC3
+           MOVE FS-LAMT OF INREC5 TO FS-LAMT OF OUTREC3
+           MOVE ' AMOUNT FIELD IS BLANK IN REPAY ' TO FS-TEXT OF OUTREC3
+           WRITE OUTREC3.
+       ERROR-PARA-LAMT4.
+           MOVE OP OF INREC5 TO OP OF OUTREC3
+           MOVE FS-CID OF INREC5 TO FS-CID OF OUTREC3
+           MOVE FS-LTYPE OF INREC5 TO FS-LTYPE OF OUTREC3
+           MOVE FS-LID OF INREC5 TO FS-LID OF OUTREC3
+           MOVE FS-LAMT OF INREC5 TO FS-LAMT OF OUTREC3
+           MOVE ' AMT GIVEN IS > THAN REQUIRED ' TO FS-TEXT OF OUTREC3
+           WRITE OUTREC3.
+      ******* PARA TO DISPLAY ERROR IF NO OF LOAN EXCEEDED LIMIT *******
+      ******************************************************************
+       ERROR-PARA-LOANNO.
+           MOVE OP OF INREC4 TO OP OF OUTREC2
+           MOVE FS-CID OF INREC4 TO FS-CID OF OUTREC2
+           MOVE FS-LTYPE OF INREC4 TO FS-LTYPE OF OUTREC2
+           MOVE FS-LAMT OF INREC4 TO FS-LAMT OF OUTREC2
+           MOVE ' NO. OF LOAN EXCEEDED THE LIMIT ' TO FS-TEXT OF OUTREC2
+           WRITE OUTREC2.
+      ******** PARA TO DISPLAY ERROR IF LOAN WITH OPEN STATUS **********
+      ********************** ENTERED TO DELETE *************************
+       ERROR-PARA-DEL.
+           MOVE OP OF INREC5 TO OP OF OUTREC4
+           MOVE FS-CID OF INREC5 TO FS-CID OF OUTREC4
+           MOVE ' LOAN WITH OPEN STATUS FOUND ' TO FS-TEXT OF OUTREC4
+           WRITE OUTREC4.
+      ********* PARA TO DISPLAY ERROR IF CID HAVING NO LOAN ************
+      ********************** ENTERED TO DELETE *************************
+       ERROR-PARA-DEL2.
+           MOVE OP OF INREC5 TO OP OF OUTREC4
+           MOVE FS-CID OF INREC5 TO FS-CID OF OUTREC4
+           MOVE ' LOAN WITH THIS CID NOT FOUND ' TO FS-TEXT OF OUTREC4
+           WRITE OUTREC4.
+      ********* PARA TO DISPLAY ERROR IF CID HAVING NO LOAN ************
+      ********************** ENTERED TO REPAY **************************
+       ERROR-PARA-INVALID.
+           MOVE OP OF INREC5 TO OP OF OUTREC3
+           MOVE FS-CID OF INREC5 TO FS-CID OF OUTREC3
+           MOVE FS-LTYPE OF INREC5 TO FS-LTYPE OF OUTREC3
+           MOVE FS-LID OF INREC5 TO FS-LID OF OUTREC3
+           MOVE FS-LAMT OF INREC5 TO FS-LAMT OF OUTREC3
+           MOVE ' LOAN DOESNT EXIST FOR THIS ID ' TO FS-TEXT OF OUTREC3
+           WRITE OUTREC3.

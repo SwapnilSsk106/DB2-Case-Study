@@ -1,0 +1,30 @@
+01     TONY      RUSSIA               CID FIELD IS BLANK IN INSERT              
+01C1008          JAPAN                NAME FIELD IS BLANK IN INSERT             
+01C1009FALCON                         ADDR FIELD IS BLANK IN INSERT             
+01C1003ANTMAN    SAUDI                CUSTOMER-ID ALREADY EXISTS                
+02               CHINA                CID FIELD IS BLANK IN UPDATE              
+02C1007                               ADDR FIELD IS BLANK IN UPDATE             
+02C1008                               ADDR FIELD IS BLANK IN UPDATE             
+04     AL0002000                      CID FIELD IS BLANK IN ADD LOAN            
+04C1002  0010000                      LTYPE FIELD IS BLANK IN ADD LOAN          
+04C1003CL                             LAMT FIELD IS BLANK IN ADD LOAN           
+04C1009EL0007000                      CID DOESNT EXIST TO ADD A LOAN            
+04C1004DL0010000                      LOAN TYPE FIELD IS INVALID                
+04C1005AL0200000                      AMOUNT EXCEEDED THE LIMIT                 
+05C1006PLL10000075000                 AMT GIVEN IS > THAN REQUIRED              
+05     CLL40000080000                 CID FIELD IS BLANK IN REPAY               
+05C1003       0010000                 LTYPE FIELD IS BLANK IN REPAY             
+05C1005EL     0090000                 LID FIELD IS BLANK IN REPAY               
+05C1007ELL2000      0                 AMOUNT FIELD IS BLANK IN REPAY            
+05C1009ALL50000090000                 LOAN DOESNT EXIST FOR THIS ID             
+05C1002PLL10000034000                 LOAN DOESNT EXIST FOR THIS ID             
+05C1004PLL10000007000                 LOAN DOESNT EXIST FOR THIS ID             
+05C1006DLL10000056000                 LOAN DOESNT EXIST FOR THIS ID             
+05C1005ALL75000020000                 LOAN DOESNT EXIST FOR THIS ID             
+05C1003HLL30000480000                 AMT GIVEN IS > THAN REQUIRED              
+03                                    CID FIELD IS BLANK IN DELETE              
+03C1004                               LOAN WITH OPEN STATUS FOUND               
+03C1001                               LOAN WITH THIS CID NOT FOUND              
+03C1009                               CID DOESNT EXIST TO DELETE                
+03C1005                               LOAN WITH OPEN STATUS FOUND               
+03C1003                               LOAN WITH OPEN STATUS FOUND               

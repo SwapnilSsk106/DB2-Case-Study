@@ -1,0 +1,171 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. REPORT1.
+      ******************************************************************
+      * THIS PROGRAM IS FOR THE CASE STUDY OF DB2-JCL-COBOL.           *
+      * THIS PROGRAM WILL GENERATE THE REPORT FOR THE OUTSTANDING      *
+      * LOANS OF THE INDOBANK LTD.                                     *
+      * AUTHORS:        1) SWAPNIL KOTHARI                             *
+      *                 2) THEJASRI ADUSUPALLI                         *
+      *                 3) PRIYAL BAMNIKAR                             *
+      * DATE COMPILED:  08-10-2019                                    *
+      ******************************************************************
+       ENVIRONMENT DIVISION.
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+      ********* FILE TO GENERATE OUTSTANDING LOAN REPORT ***************
+      ******************************************************************
+             SELECT OUTFILE2 ASSIGN TO DD3
+             FILE STATUS IS WS-FS3.
+       DATA DIVISION.
+       FILE SECTION.
+       FD OUTFILE2.
+       01 OUTREC         PIC X(80).
+       WORKING-STORAGE SECTION.
+      ******** EXEC STMTS FOR INCLUDING TABLE, SQLCA AND CURSOR ********
+      ******************************************************************
+           EXEC SQL
+             INCLUDE LOANTRAN
+           END-EXEC
+           EXEC SQL
+             INCLUDE SQLCA
+           END-EXEC
+           EXEC SQL
+             DECLARE LOANCUR CURSOR FOR
+             SELECT TYPE,CID,LID,ODATE,OUTAMT
+             FROM LOAN_TRANS
+             ORDER BY TYPE , CID
+           END-EXEC.
+      ************ DECLARATION OF ALL HEADING VARIABLES ****************
+      ******************************************************************
+       01 DREC.
+          05             PIC X(5)  VALUE SPACES.
+          05 TYPE1       PIC X(2).
+          05             PIC X(15) VALUE SPACES.
+          05 CID1        PIC X(5).
+          05             PIC X(12) VALUE SPACES.
+          05 LID1        PIC 9(5).
+          05             PIC X(10) VALUE SPACES.
+          05 ODATE1      PIC 99/99/9999.
+          05             PIC X(6)  VALUE SPACES.
+          05 OUTAMT1     PIC ZZZZ9(3).
+          05             PIC X(3)  VALUE SPACES.
+       01 HEAD1.
+          05 HEAD-2     PIC X(70) VALUE 'INDOBANK LTD'.
+          05 D.
+             10 D2      PIC 99.
+             10 V1      PIC X     VALUE '/'.
+             10 MONTH2  PIC 99.
+             10 V2      PIC X     VALUE '/'.
+             10 YEAR2   PIC 9999.
+       01 HEAD2.
+          05            PIC X(23) VALUE SPACES.
+          05 HEAD3      PIC X(24) VALUE 'OUTSTANDING LOAN REPORT'.
+          05            PIC X(33) VALUE SPACES.
+       01 BLANK-LINE    PIC X(80) VALUE  SPACE.
+       01 HEAD          PIC X(80) VALUE 'LOAN CATEGORY     CUSTOMER NUMB
+      -     'ER   LOAN NUMBER    DATE OF OPENING     AMOUNT'.
+       01 DATE1         PIC X(10).
+       01 WS-PAGE.
+          05            PIC X(70) VALUE SPACES.
+          05 PG         PIC X(8)  VALUE 'PAGE NO:'.
+          05 WS-PG      PIC 99    VALUE 01.
+       01 WS-TOT.
+          05            PIC X(35) VALUE 'OUTSTANDING AMOUNT GRAND TOTAL
+      -     ': '.
+          05 WS-GRAND   PIC 9(7)  VALUE 0.
+       01 WS-DOP1.
+             10 WS-DD   PIC 99.
+             10         PIC X     VALUE '/'.
+             10 WS-MM   PIC 99.
+             10         PIC X     VALUE '/'.
+             10 WS-YYYY PIC 9999.
+             10         PIC X     VALUE '/'.
+       77 WS-FS3        PIC 99.
+       01 WS-LINE       PIC X(80) VALUE ALL '-'.
+       77 WS-LCTR       PIC 99    VALUE 0.
+      ******************************************************************
+       PROCEDURE DIVISION.
+       MAIN-PARA.
+            PERFORM OPEN-PARA
+            PERFORM SUMMARY-PARA
+            PERFORM READ-PARA UNTIL SQLCODE NOT = 0
+            WRITE OUTREC FROM BLANK-LINE
+            WRITE OUTREC FROM WS-TOT.
+            EXEC SQL
+              CLOSE LOANCUR
+            END-EXEC
+            CLOSE OUTFILE2
+            STOP RUN.
+      ******** PARA TO OPEN FILE IN O/P MODE AND OPEN CURSOR ***********
+      ******************************************************************
+       OPEN-PARA.
+            OPEN OUTPUT OUTFILE2
+            DISPLAY 'OPEN STATUS' WS-FS3
+            EXEC SQL
+              OPEN LOANCUR
+            END-EXEC.
+      ********* PARA TO READ RECORDS FROM TABLE USING CURSOR ***********
+      ******************************************************************
+       READ-PARA.
+            EXEC SQL
+              FETCH LOANCUR INTO :HV2-TYPE,:HV2-CID,:HV2-LID
+              ,:HV2-ODATE,:HV2-OUTAMT
+            END-EXEC
+            IF SQLCODE = 0
+               PERFORM WRITE-PARA
+            ELSE
+               DISPLAY 'SQLCODE' SQLCODE
+            END-IF.
+      ******** PARA TO WRITE RECORDS IN OUTPUT FILE OF REPORT **********
+      ******************************************************************
+       WRITE-PARA.
+             MOVE HV2-TYPE TO TYPE1
+             MOVE HV2-CID  TO CID1
+             MOVE HV2-LID  TO LID1
+             MOVE HV2-ODATE(9:2) TO WS-DD
+             MOVE HV2-ODATE(6:2) TO WS-MM
+             MOVE HV2-ODATE(1:4) TO WS-YYYY
+             MOVE WS-DOP1 TO ODATE1
+             MOVE HV2-OUTAMT TO OUTAMT1
+             ADD  HV2-OUTAMT TO WS-GRAND
+             WRITE OUTREC FROM DREC
+             ADD 1 TO WS-LCTR
+             IF WS-LCTR = 3
+                MOVE 1 TO WS-LCTR
+                PERFORM CNTRL-BREAK
+             END-IF
+             IF WS-FS3 NOT = 0
+                DISPLAY 'WRITE FAILED'
+             END-IF.
+      ******** PARA TO WRITE HEADING IN OUTPUT FILE OF REPORT **********
+      ******************************************************************
+       SUMMARY-PARA.
+             ACCEPT DATE1 FROM DATE YYYYMMDD
+             PERFORM REVERSE-PARA
+             WRITE OUTREC FROM HEAD1
+             WRITE OUTREC FROM WS-PAGE
+             WRITE OUTREC FROM HEAD2
+             WRITE OUTREC FROM BLANK-LINE
+             WRITE OUTREC FROM BLANK-LINE
+             WRITE OUTREC FROM HEAD
+             WRITE OUTREC FROM BLANK-LINE.
+      ******** PARA TO ADD CNTRL-BREAK IN OUTPUT FILE OF REPORT ********
+      ******************************************************************
+       CNTRL-BREAK.
+             ADD 1 TO WS-PG
+             WRITE OUTREC FROM WS-LINE
+             WRITE OUTREC FROM HEAD-2 OF HEAD1
+             WRITE OUTREC FROM BLANK-LINE
+             WRITE OUTREC FROM WS-PAGE
+             WRITE OUTREC FROM HEAD2
+             WRITE OUTREC FROM BLANK-LINE
+             WRITE OUTREC FROM BLANK-LINE
+             WRITE OUTREC FROM HEAD
+             WRITE OUTREC FROM BLANK-LINE
+             MOVE 0 TO WS-LCTR.
+      ******** PARA TO CHANGE DATE FORMAT TO DD-MM-YYYY IN REPORT ******
+      ******************************************************************
+       REVERSE-PARA.
+             MOVE DATE1(1:4)  TO YEAR2
+             MOVE DATE1(5:2)  TO MONTH2
+             MOVE DATE1(7:2)  TO D2.

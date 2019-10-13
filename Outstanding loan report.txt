@@ -18,7 +18,7 @@ INDOBANK LTD
 LOAN CATEGORY     CUSTOMER NUMBER   LOAN NUMBER    DATE OF OPENING     AMOUNT
 
      CL               C1006            L4000          08/10/2019       209000   
-    EL               C1004            L2000          08/10/2019        72600   
+     EL               C1004            L2000          08/10/2019        72600   
      EL               C1007            L2000          08/10/2019        11392   
 --------------------------------------------------------------------------------
 INDOBANK LTD
